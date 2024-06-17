@@ -2,7 +2,6 @@
 #include <bpf/bpf_core_read.h>
 #include <bpf/bpf_endian.h>
 #include <bpf/bpf_helpers.h>
-
 #include "packet.h"
 
 struct ipv4_lpm_key {
@@ -22,17 +21,14 @@ struct {
 
 SEC("xdp")
 int ping(struct xdp_md *ctx) {
-    struct iphdr *iphdr;
-    bool success = populate_ip_header(&iphdr, ctx);
-    if (!success) {
+    struct iphdr *iphdr = populate_ip_header(ctx);
+    if (iphdr == NULL) {
         bpf_printk("Failed to populate ip header\n");
         return XDP_PASS;
     }
-    // long protocol = iphdr->protocol;
     struct ipv4_lpm_key prefix;
     prefix.prefixlen = 32;
-    // prefix.data = BPF_CORE_READ(iphdr, saddr);
-    bpf_probe_read_kernel(&prefix.data, sizeof(prefix.data), &iphdr->saddr);
+    BPF_CORE_READ_INTO(&prefix.data, iphdr, saddr);
     __u32 *ip_match = bpf_map_lookup_elem(&allow_ipv4, &prefix);
 
     // bpf_printk("ip: %d.%d.%d.%d match:%d\n", prefix.data[0], prefix.data[1], prefix.data[2], prefix.data[3], ip_match);

@@ -5,15 +5,11 @@ NET_INTF = ens4
 BPF_OBJ = ${TARGET:=.bpf.o}
 
 # all: config-map
-all: $(TARGET) $(BPF_OBJ) config-map
+all: clean $(TARGET) $(BPF_OBJ) config-map
 .PHONY: all 
 .PHONY: $(TARGET)
 
 $(TARGET): $(BPF_OBJ) config-map
-	xdp-loader unload $(NET_INTF) --all || true
-	rm -f /sys/fs/bpf/$(TARGET)
-	rm -f /sys/fs/bpf/my_config
-	rm -f /sys/fs/bpf/allow_ipv4
 	xdp-loader load $(NET_INTF) $(BPF_OBJ) -p /sys/fs/bpf/ -m skb
 
 	./config-map allow "142.250.0.0/15"
@@ -36,7 +32,7 @@ vmlinux.h:
 	bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h		
 
 clean:
-	- xdp-loader unload $(NET_INTF) --all
+	- xdp-loader unload $(NET_INTF) --all || true
 	- rm -f /sys/fs/bpf/$(TARGET)
 	- rm -f /sys/fs/bpf/my_config
 	- rm -f /sys/fs/bpf/allow_ipv4

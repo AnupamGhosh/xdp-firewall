@@ -42,36 +42,23 @@ unsigned char lookup_protocol(struct xdp_md *ctx)
     return protocol;
 }
 
-bool populate_ip_header(struct iphdr **iphdr, struct xdp_md *ctx) {
+struct iphdr * populate_ip_header(struct xdp_md *ctx) {
     void *data = (void *)(long)ctx->data;
     void *data_end = (void *)(long)ctx->data_end;
     struct ethhdr *eth = data;
+    struct iphdr *null = (struct iphdr *) NULL;
     if (data + sizeof(struct ethhdr) > data_end)
-        return false;
+        return null;
 
     if (bpf_ntohs(eth->h_proto) != ETH_P_IP)
-        return false;
+        return null;
 
     if (data + sizeof(struct ethhdr) + sizeof(struct iphdr) > data_end)
-        return false;
+        return null;
 
-    *iphdr = data + sizeof(struct ethhdr);
-    // unsigned char protocol = 0;
-    // protocol = iph->protocol;
-    // packet->protocol = ip_header->protocol;
-    // bpf_printk("protocol in header=%d", packet->protocol);
-    return true;
+    return (struct iphdr *)(data + sizeof(struct ethhdr));
 }
 
-// void readable_ip(unsigned int ip)
-// {
-//     unsigned char bytes[4];
-//     bytes[0] = ip & 0xFF;
-//     bytes[1] = (ip >> 8) & 0xFF;
-//     bytes[2] = (ip >> 16) & 0xFF;
-//     bytes[3] = (ip >> 24) & 0xFF;   
-//     sprintf("%d.%d.%d.%d\n", bytes[3], bytes[2], bytes[1], bytes[0]);        
-// }
 // // For TCP or UDP protocols
 // if (ip_header->protocol == IPPROTO_TCP || ip_header->protocol == IPPROTO_UDP) {
 //     uint16_t source_port = ntohs(ip_header->sport); // Convert from network byte order
